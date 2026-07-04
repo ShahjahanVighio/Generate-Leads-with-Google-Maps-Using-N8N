@@ -45,7 +45,3 @@ This pipeline extracts highly targeted lead parameters including:
 3. **Link Credentials:** Authenticate your Google Sheets and HTTP Request (`GMaps API`) nodes using your secure private developer credentials.
 4. **Execute:** Fire the manual trigger or activate the production schedule to start extracting hyper-local business data completely on autopilot.
 
----
-
-## 📄 License
-This workflow blueprint is open-source and available under the [MIT License](LICENSE).
