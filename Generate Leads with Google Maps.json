@@ -1,0 +1,1790 @@
+{
+  "name": "Generate Leads with Google Maps - AlexK1919",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "e9905fa2-37d3-4799-b8a5-e8333dc07bd6",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        352,
+        544
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "95a49330-991e-4fd8-919d-bf2b3d84c7a1",
+      "name": "Run workflow every hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        352,
+        368
+      ],
+      "typeVersion": 1.1,
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "id": "4c6acf96-3a7a-4c43-b30f-405bbff2b7f5",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        352,
+        208
+      ],
+      "typeVersion": 1,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "51e191cb-af20-423b-9303-8523caa4ae0d",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $('Exponential Backoff').item.json[\"retryCount\"] }}",
+              "rightValue": 10
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9643c1f9-ab09-458c-b0a1-d61e9cbc05a5",
+      "name": "Check Max Retries1",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3104,
+        752
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "errorMessage": "Google Sheets API Limit has been triggered and the workflow has stopped"
+      },
+      "id": "63a778f8-c528-4d30-a566-01c27765133f",
+      "name": "Stop and Error1",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        3312,
+        752
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://places.googleapis.com/v1/places:searchText",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Goog-FieldMask",
+              "value": "places.id,places.displayName,places.addressComponents,places.formattedAddress,places.primaryType,places.primaryTypeDisplayName,places.types,places.location,places.nationalPhoneNumber,places.rating,places.userRatingCount,places.websiteUri,places.editorialSummary,places.reviews,places.attributions,places.userRatingCount"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "textQuery",
+              "value": "={{ $('Subcategory').item.json.Subcategory }} {{ $json.zip }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "b0213b94-a378-49a6-b23f-114c21ee5ad0",
+      "name": "GMaps API",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1504,
+        688
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Settings').first().json.gs_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').first().json.sheet }}"
+        },
+        "columns": {
+          "value": {
+            "zip": "={{ $('Set Zip').first().json.zip }}",
+            "status": "scraped",
+            "subcat": "={{ $('Subcategory').first().json.Subcategory }}"
+          },
+          "schema": [
+            {
+              "id": "zip",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "zip",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "status",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subcat",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "subcat",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "readOnly": true,
+              "required": false,
+              "displayName": "row_number",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "zip"
+          ]
+        },
+        "options": {}
+      },
+      "id": "0dd0862a-bf30-4c80-a2ef-68c8be341c3d",
+      "name": "Update Status to Success",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2944,
+        1168
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Settings').item.json.gs_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "=Results"
+        },
+        "columns": {
+          "value": {
+            "type": "={{ $('Subcategory').item.json.Subcategory }}",
+            "phone": "={{ $json.place.nationalPhoneNumber }}",
+            "title": "={{ $json.place.displayName.text }}",
+            "types": "={{ $json.place.types }}",
+            "rating": "={{ $json.place.rating }}",
+            "address": "={{ $json.place.formattedAddress }}",
+            "reviews": "={{ $json.place.reviews }}",
+            "website": "={{ $json.place.websiteUri }}",
+            "place_id": "={{ $json.place.id }}",
+            "gps_coordinates": "={\"latitude\":{{ $json.place.location.latitude }},\"longitude\":{{ $json.place.location.longitude }}}"
+          },
+          "schema": [
+            {
+              "id": "ACTION",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "ACTION",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "STATUS",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "STATUS",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "title",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "title",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "email",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "email",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "name",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "firstname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "firstname",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "lastname",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "lastname",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "phone",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "phone",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clean url",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "clean url",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "website",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "website",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WP API",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "WP API",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "WP",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "WP",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "facebook",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "facebook",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "instagram",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "instagram",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "youtube",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "youtube",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tiktok",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "tiktok",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "twitter",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "twitter",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "linkedin",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "linkedin",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pinterest",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "pinterest",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reddit",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "reddit",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "rating",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "rating",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviews",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "reviews",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "type",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "type",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "address",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "address",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "price",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "price",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "place_id",
+              "type": "string",
+              "display": true,
+              "removed": false,
+              "required": false,
+              "displayName": "place_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "position",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "position",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "data_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "data_cid",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "data_cid",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reviews_link",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "reviews_link",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "photos_link",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "photos_link",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "gps_coordinates",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "gps_coordinates",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "place_id_search",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "place_id_search",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "provider_id",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "provider_id",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "types",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "types",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "open_state",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "open_state",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "hours",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "hours",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "operating_hours",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "operating_hours",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "description",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "service_options",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "service_options",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "order_online",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "order_online",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "thumbnail",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "thumbnail",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "editorial_reviews",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "editorial_reviews",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "unclaimed_listing",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "unclaimed_listing",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reserve_a_table",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "reserve_a_table",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "user_review",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "user_review",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "amenities",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "amenities",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "book_online",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "displayName": "book_online",
+              "defaultMatch": false,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": [
+            "place_id"
+          ]
+        },
+        "options": {}
+      },
+      "id": "9c162506-1795-4708-af41-97c63174b283",
+      "name": "Add rows in Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2512,
+        752
+      ],
+      "typeVersion": 4.2,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4c5ad6be-28aa-455f-8ee2-edce1ab1bdbb",
+              "name": "row_number",
+              "type": "number",
+              "value": "={{ $json.row_number }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "90c04af3-f113-47e6-926c-05dada51c47d",
+      "name": "Set Row Number",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1504,
+        80
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7b1629c5-cbfe-4769-8286-66b46c51cd7e",
+              "name": "zip",
+              "type": "number",
+              "value": "={{ $('Loop Zips').first().json.zip }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "8994ab19-418c-4352-9acc-649547f1468d",
+      "name": "Set Zip",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1312,
+        688
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "758ff896-7cd8-4f72-bfbb-e64583c5937c",
+              "name": "places.id",
+              "type": "string",
+              "value": "={{ $json.place.id }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "6c76c4d8-6aaf-48cd-8ae2-986aa7e4b8a5",
+      "name": "Set Place ID",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        2112,
+        752
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Define the retry count (coming from a previous node or set manually)\nconst retryCount = $json[\"retryCount\"] || 0;  // If not present, default to 0\nconst maxRetries = 5;  // Define the maximum number of retries\nconst initialDelay = 1;  // Initial delay in seconds (1 second)\n\n// If the retry count is less than the max retries, calculate the delay\nif (retryCount < maxRetries) {\n    const currentDelayInSeconds = initialDelay * Math.pow(2, retryCount);  // Exponential backoff delay in seconds\n    \n    // Log the delay time for debugging\n    console.log(`Waiting for ${currentDelayInSeconds} seconds before retry...`);\n    \n    return {\n        json: {\n            retryCount: retryCount + 1,  // Increment retry count\n            waitTimeInSeconds: currentDelayInSeconds, // Pass the delay time in seconds\n            status: 'retrying',\n        }\n    };\n} else {\n    // If max retries are exceeded, return a failure response\n    return {\n        json: {\n            error: 'Max retries exceeded',\n            retryCount: retryCount,\n            status: 'failed'\n        }\n    };\n}\n"
+      },
+      "id": "84207b18-bec1-4ec5-b8ec-9c1c25c9c57b",
+      "name": "Exponential Backoff",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2704,
+        752
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "compare": "selectedFields",
+        "fieldsToCompare": "place.id,places.id",
+        "options": {}
+      },
+      "id": "0da7113f-bfe5-4500-beb6-5f408687305b",
+      "name": "Remove Duplicates",
+      "type": "n8n-nodes-base.removeDuplicates",
+      "position": [
+        2304,
+        752
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json[\"waitTime\"] }}"
+      },
+      "id": "b27d3782-c627-4405-a559-df6b0ab436e8",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        2912,
+        752
+      ],
+      "webhookId": "e0cf8da3-e4ab-490e-abcd-0c0c55b90846",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "51e191cb-af20-423b-9303-8523caa4ae0d",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $('Exponential Backoff1').item.json[\"retryCount\"] }}",
+              "rightValue": 10
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9eb4917c-fec2-47d5-b27b-5de08e759fbc",
+      "name": "Check Max Retries",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3552,
+        1168
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "errorMessage": "Google Sheets API Limit has been triggered and the workflow has stopped"
+      },
+      "id": "108f5bda-c418-4e72-98e7-f265b845bd84",
+      "name": "Stop and Error",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        3744,
+        1168
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Define the retry count (coming from a previous node or set manually)\nconst retryCount = $json[\"retryCount\"] || 0;  // If not present, default to 0\nconst maxRetries = 5;  // Define the maximum number of retries\nconst initialDelay = 1;  // Initial delay in seconds (1 second)\n\n// If the retry count is less than the max retries, calculate the delay\nif (retryCount < maxRetries) {\n    const currentDelayInSeconds = initialDelay * Math.pow(2, retryCount);  // Exponential backoff delay in seconds\n    \n    // Log the delay time for debugging\n    console.log(`Waiting for ${currentDelayInSeconds} seconds before retry...`);\n    \n    return {\n        json: {\n            retryCount: retryCount + 1,  // Increment retry count\n            waitTimeInSeconds: currentDelayInSeconds, // Pass the delay time in seconds\n            status: 'retrying',\n        }\n    };\n} else {\n    // If max retries are exceeded, return a failure response\n    return {\n        json: {\n            error: 'Max retries exceeded',\n            retryCount: retryCount,\n            status: 'failed'\n        }\n    };\n}\n"
+      },
+      "id": "856955cf-6c26-44f5-8c21-a14a572b683f",
+      "name": "Exponential Backoff1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        3152,
+        1168
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json[\"waitTime\"] }}"
+      },
+      "id": "f563bf9a-2ce6-4962-87ab-6b022cab5f7e",
+      "name": "Wait1",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        3344,
+        1168
+      ],
+      "webhookId": "670750d4-0c4d-4fff-b139-1d60be1eac68",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fa469a25-eb00-4011-a626-87fae7fb8bbd",
+              "name": "gs_url",
+              "type": "string",
+              "value": "https://docs.google.com/spreadsheets/d/11bzNIQDE4GB2NWkyGv2IfEsTggSIBCKe2z39Ecp2Z4g/edit?gid=853393043#gid=853393043"
+            },
+            {
+              "id": "df0a7a51-0ec6-47d2-9f73-bc8268385305",
+              "name": "catSheet",
+              "type": "string",
+              "value": "Google Maps Categories"
+            },
+            {
+              "id": "a1ff9a58-9ae6-4000-9fcd-6c11de23bd48",
+              "name": "sheet",
+              "type": "string",
+              "value": "AZ Zips"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5c208d78-9cc5-44ef-b3e3-3dd523327fdf",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        624,
+        368
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Settings').item.json.gs_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').item.json.catSheet }}"
+        },
+        "options": {}
+      },
+      "id": "17210586-094e-41e1-a6c2-04d0f6de38a8",
+      "name": "GS - Get Subcategory",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        1200,
+        352
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d3470f6f-c66e-4223-bbf5-81e45201d45d",
+              "name": "Subcategory",
+              "type": "string",
+              "value": "={{ $json.Subcategory }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "1a861af7-c87a-4bf8-9c1d-6f943f9074a4",
+      "name": "Subcategory",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1600,
+        352
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Settings').item.json.gs_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').item.json.sheet }}"
+        },
+        "options": {}
+      },
+      "id": "0095c3e5-8884-47b1-95f3-1a3c57bca19d",
+      "name": "GS - Get Zip Codes",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        912,
+        80
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the places array from the input data\nconst places = items[0]?.json?.body?.places || [];\n\n// Create an output array to hold each place as a separate item\nlet output = [];\n\nif (places.length > 0) {\n  for (let i = 0; i < places.length; i++) {\n    // For each place, push a new item into the output array\n    output.push({\n      json: {\n        place: places[i], // The individual place object\n        otherData: items[0].json.otherData || null  // Include other data or default to null\n      }\n    });\n  }\n} else {\n  // Log an error or handle the case where places array is empty or undefined\n  console.log('Places array is empty or undefined.');\n}\n\n// Return the output array, so each place becomes its own item\nreturn output;\n"
+      },
+      "id": "6d1f40f5-2f7f-412c-bf1b-4e1d2179bb1a",
+      "name": "Place Array",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1904,
+        752
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4a75e29f-f12b-4915-830c-34345e1ee12b",
+      "name": "Loop Zips",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1008,
+        288
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "c7fdc900-51b5-458a-8b91-9a44402d7a7f",
+      "name": "Loop Subcats",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [
+        1104,
+        624
+      ],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "={{ $('Settings').first().json.gs_url }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Settings').first().json.sheet }}"
+        },
+        "options": {}
+      },
+      "id": "0dbdae0e-997f-47fc-998d-340789e221a8",
+      "name": "GS - Get Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "position": [
+        2704,
+        960
+      ],
+      "executeOnce": true,
+      "typeVersion": 4.2,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "51e191cb-af20-423b-9303-8523caa4ae0d",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              },
+              "leftValue": "={{ $('Exponential Backoff2').item.json[\"retryCount\"] }}",
+              "rightValue": 10
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a33535fd-eb63-4eb8-a0f1-c6a4505cc2a3",
+      "name": "Check Max Retries2",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        3312,
+        960
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "errorMessage": "Google Sheets API Limit has been triggered and the workflow has stopped"
+      },
+      "id": "37538ce9-b11d-4f0b-b573-1c06d760bc1e",
+      "name": "Stop and Error2",
+      "type": "n8n-nodes-base.stopAndError",
+      "position": [
+        3504,
+        960
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Define the retry count (coming from a previous node or set manually)\nconst retryCount = $json[\"retryCount\"] || 0;  // If not present, default to 0\nconst maxRetries = 5;  // Define the maximum number of retries\nconst initialDelay = 1;  // Initial delay in seconds (1 second)\n\n// If the retry count is less than the max retries, calculate the delay\nif (retryCount < maxRetries) {\n    const currentDelayInSeconds = initialDelay * Math.pow(2, retryCount);  // Exponential backoff delay in seconds\n    \n    // Log the delay time for debugging\n    console.log(`Waiting for ${currentDelayInSeconds} seconds before retry...`);\n    \n    return {\n        json: {\n            retryCount: retryCount + 1,  // Increment retry count\n            waitTimeInSeconds: currentDelayInSeconds, // Pass the delay time in seconds\n            status: 'retrying',\n        }\n    };\n} else {\n    // If max retries are exceeded, return a failure response\n    return {\n        json: {\n            error: 'Max retries exceeded',\n            retryCount: retryCount,\n            status: 'failed'\n        }\n    };\n}\n"
+      },
+      "id": "0a897213-5793-4100-8e39-579099694768",
+      "name": "Exponential Backoff2",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2912,
+        960
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json[\"waitTime\"] }}"
+      },
+      "id": "e3f2f39a-f013-44de-9721-8df05a81a412",
+      "name": "Wait2",
+      "type": "n8n-nodes-base.wait",
+      "position": [
+        3104,
+        960
+      ],
+      "webhookId": "d9b32a26-861f-46d5-a8d7-0ede2ea37fe6",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "maxItems": 3
+      },
+      "id": "987ed947-4df5-4d15-8e97-2ff3a313c937",
+      "name": "Limit",
+      "type": "n8n-nodes-base.limit",
+      "position": [
+        1920,
+        80
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Settings",
+        "height": 1391,
+        "width": 247,
+        "color": 3
+      },
+      "id": "09e063d3-c890-4b97-b8ea-e1e33fef4e01",
+      "name": "Sticky Note8",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "In the Google Sheets document, set the subcategories you'd like to search for\n\nSet the URL of your Google Sheets document\n\nSet the Zip Code sheet name",
+        "height": 220,
+        "width": 219,
+        "color": 7
+      },
+      "id": "629d54e7-72e6-4a2f-b7c2-d2454319b08f",
+      "name": "Sticky Note15",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        80
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Triggers",
+        "height": 1391,
+        "width": 247,
+        "color": 7
+      },
+      "id": "2fa66100-eb0b-4b84-97e2-6ecad0fa246a",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        288,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3d16d922-0ed3-4a0f-9707-43797438970d",
+              "name": "zip",
+              "type": "number",
+              "value": "={{ $json.zip }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "6a11bb44-ea01-4021-87dd-07acac044d5c",
+      "name": "Zips",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1104,
+        80
+      ],
+      "typeVersion": 3.4
+    },
+    {
+      "parameters": {
+        "content": "# Google Maps API",
+        "height": 880,
+        "width": 3060,
+        "color": 5
+      },
+      "id": "d61010e4-3269-44d1-9bc2-9c6a89dc7ab3",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        528
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "9f5a5e37-faae-45db-8a22-ad7d5786ecfe",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.status }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a32e3d25-5963-49a0-8e4e-6554c5c4a9ca",
+      "name": "Filter Zips",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        1312,
+        80
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "b64333b6-67ce-47c4-a2cc-07303278d178",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              },
+              "leftValue": "={{ $json.STATUS }}",
+              "rightValue": "Ignore"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cd4bcb22-5d1c-499c-aff7-62373bb182ec",
+      "name": "Filter Subcategories",
+      "type": "n8n-nodes-base.filter",
+      "position": [
+        1408,
+        352
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "7424452f-e208-4e7e-8144-d0c6278bc0f0",
+              "operator": {
+                "type": "object",
+                "operation": "empty",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.body }}",
+              "rightValue": ""
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "abb55019-01a2-41ac-adfb-e2525a4b1b9b",
+      "name": "If Empty",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        1712,
+        688
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "row_number",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "id": "7ca426f5-6b1f-476f-8b26-e8a5bf048c52",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "position": [
+        1728,
+        80
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "# Data Prep",
+        "height": 500,
+        "width": 3060,
+        "color": 4
+      },
+      "id": "c804e20d-3913-4266-8448-fa243ba32b0e",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        848,
+        0
+      ],
+      "typeVersion": 1
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Check Max Retries1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zips": {
+      "main": [
+        [
+          {
+            "node": "Filter Zips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Loop Zips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Check Max Retries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Check Max Retries2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Zip": {
+      "main": [
+        [
+          {
+            "node": "GMaps API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Empty": {
+      "main": [
+        [
+          {
+            "node": "Loop Subcats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Place Array",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "GS - Get Zip Codes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GMaps API": {
+      "main": [
+        [
+          {
+            "node": "If Empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Zips": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GS - Get Subcategory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Zips": {
+      "main": [
+        [
+          {
+            "node": "Set Row Number",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Place Array": {
+      "main": [
+        [
+          {
+            "node": "Set Place ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subcategory": {
+      "main": [
+        [
+          {
+            "node": "Loop Subcats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Subcats": {
+      "main": [
+        [
+          {
+            "node": "Loop Zips",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Zip",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Place ID": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Row Number": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Get Status": {
+      "main": [
+        [
+          {
+            "node": "Update Status to Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exponential Backoff2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Max Retries": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Status to Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Add rows in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Max Retries1": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add rows in Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Max Retries2": {
+      "main": [
+        [
+          {
+            "node": "Stop and Error2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Get Zip Codes": {
+      "main": [
+        [
+          {
+            "node": "Zips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exponential Backoff": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exponential Backoff1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exponential Backoff2": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Subcategories": {
+      "main": [
+        [
+          {
+            "node": "Subcategory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GS - Get Subcategory": {
+      "main": [
+        [
+          {
+            "node": "Filter Subcategories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run workflow every hours": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status to Success": {
+      "main": [
+        [
+          {
+            "node": "Loop Subcats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exponential Backoff1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add rows in Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "GS - Get Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Exponential Backoff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "154ff072-9fe9-494f-98de-9331f94d0309",
+  "meta": {
+    "instanceId": "79ca1c2e1ba2143b110a64a072fbd181ef45f6d3abaeb591beacf5e31b26e46a"
+  },
+  "id": "npm5bmDHVVyPEdvC",
+  "tags": []
+}
